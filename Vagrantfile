@@ -9,13 +9,13 @@ AWS_REGION = ENV['AWS_REGION'] || "us-east-1"
 AWS_AMI = ENV['AWS_AMI'] || "ami-69f5a900"
 AWS_INSTANCE_TYPE = ENV['AWS_INSTANCE_TYPE'] || 't1.micro'
 SSH_PRIVKEY_PATH = ENV['SSH_PRIVKEY_PATH']
-PRIVATE_NETWORK = ENV['PRIVATE_NETWORK']
+PRIVATE_NETWORK = ENV['PRIVATE_NETWORK'] || '10.11.12.13'
 
 # Boolean that forwards the Docker dynamic ports 49000-49900
 # See http://docs.docker.io/en/latest/use/port_redirection/ for more
 # $ FORWARD_DOCKER_PORTS=1 vagrant [up|reload]
 FORWARD_DOCKER_PORTS = ENV['FORWARD_DOCKER_PORTS']
-VAGRANT_RAM = ENV['VAGRANT_RAM'] || 512
+VAGRANT_RAM = ENV['VAGRANT_RAM'] || 2048
 VAGRANT_CORES = ENV['VAGRANT_CORES'] || 1
 
 # You may also provide a comma-separated list of ports
@@ -48,6 +48,16 @@ echo 'deb http://get.docker.io/ubuntu docker main' > \
 
 # Update remote package metadata.  'apt-get update' is idempotent.
 apt-get update -q
+
+# [WFM] Install development dependencies
+apt-get install -y python-software-properties
+add-apt-repository -y ppa:brightbox/ruby-ng-experimental
+apt-get update
+apt-get install -y git ruby2.0 ruby2.0-dev g++ libpq-dev
+update-alternatives --set ruby /usr/bin/ruby2.0
+gem install rubygems-update
+update_rubygems
+echo 'DOCKER_OPTS="-H tcp://0.0.0.0:4243"' >> /etc/default/docker
 
 # Install docker.  'apt-get install' is idempotent.
 apt-get install -q -y lxc-docker
@@ -180,6 +190,8 @@ end
 # Setup port forwarding per loaded environment variables
 forward_ports = FORWARD_DOCKER_PORTS.nil? ? [] : [*49153..49900]
 forward_ports += FORWARD_PORTS.split(',').map{|i| i.to_i } if FORWARD_PORTS
+# [WFM] Forward service port
+forward_ports += [4243]
 if forward_ports.any?
   Vagrant::VERSION < "1.1.0" and Vagrant::Config.run do |config|
     forward_ports.each do |port|
@@ -204,3 +216,7 @@ if !PRIVATE_NETWORK.nil?
   end
 end
 
+# [WFM] Sync ~/code folder
+Vagrant.configure("2") do |config|
+  config.vm.synced_folder "/users/frank/code", "/code"
+end
