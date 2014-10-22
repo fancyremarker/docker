@@ -11,6 +11,8 @@ AWS_INSTANCE_TYPE = ENV['AWS_INSTANCE_TYPE'] || 't1.micro'
 SSH_PRIVKEY_PATH = ENV['SSH_PRIVKEY_PATH']
 PRIVATE_NETWORK = ENV['PRIVATE_NETWORK'] || '10.11.12.13'
 
+DOCKER_VERSION = ENV['DOCKER_VERSION'] || '0.10'
+
 # Boolean that forwards the Docker dynamic ports 49000-49900
 # See http://docs.docker.io/en/latest/use/port_redirection/ for more
 # $ FORWARD_DOCKER_PORTS=1 vagrant [up|reload]
@@ -58,9 +60,10 @@ update-alternatives --set ruby /usr/bin/ruby2.0
 gem install rubygems-update
 update_rubygems
 echo 'DOCKER_OPTS="-H tcp://0.0.0.0:4243"' >> /etc/default/docker
+echo 'alias docker="docker -H tcp://localhost:4243"' >> /home/vagrant/.bashrc
 
 # Install docker.  'apt-get install' is idempotent.
-apt-get install -q -y lxc-docker
+apt-get install -q -y lxc-docker-#{DOCKER_VERSION}
 
 usermod -a -G docker "$user"
 
